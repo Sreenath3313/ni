@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient"; // adjust path if needed
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Supplier {
   id: number;

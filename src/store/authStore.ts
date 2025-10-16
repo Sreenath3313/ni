@@ -5,20 +5,20 @@ interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   role: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   updateProfile: (data: { email: string; full_name: string }) => Promise<void>;
-  register: (username: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   user: null,
   role: null,
-  login: async (username: string, password: string) => {
+  login: async (email: string, password: string) => {
     try {
-      const response = await AuthService.login({ username, password });
+      const response = await AuthService.login({ email, password });
       
       set({
         isAuthenticated: true,
@@ -31,12 +31,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   logout: async () => {
-    AuthService.logout();
+    await AuthService.logout();
     set({ isAuthenticated: false, user: null, role: null });
   },
   checkAuth: async () => {
     try {
-      const user = AuthService.getCurrentUser();
+      const user = await AuthService.getCurrentUser();
       
       if (user) {
         set({
@@ -64,9 +64,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       throw error;
     }
   },
-  register: async (username: string, password: string) => {
+  register: async (email: string, password: string) => {
     try {
-      await AuthService.register(username, password);
+      await AuthService.register({ email, password, full_name: email, role: 'staff' });
       return true;
     } catch (error) {
       console.error('Registration error:', error);

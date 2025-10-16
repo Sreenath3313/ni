@@ -57,14 +57,16 @@ const InventoryService = {
         `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,serial_number.ilike.%${filters.search}%`
       );
     }
-    if (filters?.low_stock) {
-      query = query.lte("stock_level", supabase.rpc("reorder_point"));
-    }
+    // Note: PostgREST does not support column-to-column comparisons directly.
+    // We'll filter low stock client-side after fetching results.
 
     const { data, count, error } = await query.order("created_at", { ascending: false });
     if (error) throw error;
-
-    return { count: count || 0, items: data || [] };
+    let items = (data || []) as InventoryItem[];
+    if (filters?.low_stock) {
+      items = items.filter((i) => i.stock_level <= i.reorder_point);
+    }
+    return { count: count || items.length, items };
   },
 
   /** Fetch a single item by ID */
@@ -209,13 +211,14 @@ const InventoryService = {
 
   /** Fetch items with low stock */
   getLowStockItems: async (): Promise<{ count: number; items: InventoryItem[] }> => {
-    const { data, count, error } = await supabase
+    const { data, error } = await supabase
       .from("inventory")
-      .select("*", { count: "exact" })
-      .lte("stock_level", supabase.rpc("reorder_point"));
-
+      .select("*");
     if (error) throw error;
-    return { count: count || 0, items: data || [] };
+    const items = ((data || []) as InventoryItem[]).filter(
+      (i) => i.stock_level <= i.reorder_point
+    );
+    return { count: items.length, items };
   },
 };
 
